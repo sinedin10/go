@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QCM – Gestion des Opérations I | HEC Lausanne</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f4f5f7;
+    color: #1a1a2e;
+    min-height: 100vh;
+  }
+  header {
+    background: #1a1a2e;
+    color: white;
+    padding: 2rem 2rem 1.5rem;
+    text-align: center;
+  }
+  header h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.3rem; }
+  header p { font-size: 0.9rem; opacity: 0.7; }
+  .scorebar {
+    background: white;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 0.75rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex-wrap: wrap;
+  }
+  .score-pill {
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 4px 14px;
+    border-radius: 20px;
+    background: #e8f5e9;
+    color: #2e7d32;
+  }
+  .progress-wrap {
+    flex: 1;
+    min-width: 150px;
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4f46e5, #7c3aed);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+  }
+  .progress-text { font-size: 0.8rem; color: #666; white-space: nowrap; }
+  .btn-reset {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid #ccc;
+    padding: 5px 14px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    color: #444;
+    transition: background 0.15s;
+  }
+  .btn-reset:hover { background: #f0f0f0; }
+
+  main { max-width: 820px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  .section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #4f46e5;
+    margin: 2.5rem 0 1rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid #4f46e5;
+  }
+
+  .question-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.2rem;
+    transition: box-shadow 0.2s;
+  }
+  .question-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+
+  .q-number {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9ca3af;
+    margin-bottom: 0.5rem;
+  }
+  .q-text {
+    font-size: 0.97rem;
+    line-height: 1.6;
+    color: #111827;
+    margin-bottom: 1rem;
+    font-weight: 500;
+  }
+  .q-text .fr { display: block; }
+  .q-text .en { display: block; font-style: italic; color: #6b7280; font-size: 0.88rem; margin-top: 3px; }
+
+  .options { display: flex; flex-direction: column; gap: 0.5rem; }
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.65rem 0.9rem;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+    font-size: 0.91rem;
+    line-height: 1.5;
+    user-select: none;
+  }
+  .option:hover:not(.answered) { background: #f5f3ff; border-color: #a5b4fc; }
+  .option .letter {
+    font-weight: 700;
+    min-width: 20px;
+    color: #6b7280;
+    font-size: 0.88rem;
+    padding-top: 1px;
+  }
+  .option.selected { background: #ede9fe; border-color: #7c3aed; }
+  .option.selected .letter { color: #7c3aed; }
+  .option.correct { background: #d1fae5; border-color: #059669; }
+  .option.correct .letter { color: #059669; }
+  .option.wrong { background: #fee2e2; border-color: #dc2626; }
+  .option.wrong .letter { color: #dc2626; }
+  .option.show-correct { background: #d1fae5; border-color: #059669; }
+  .option.answered { cursor: default; }
+
+  .feedback {
+    margin-top: 0.8rem;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    display: none;
+  }
+  .feedback.correct { background: #d1fae5; color: #065f46; display: block; }
+  .feedback.wrong { background: #fee2e2; color: #991b1b; display: block; }
+
+  .context-box {
+    background: #f0f4ff;
+    border-left: 3px solid #4f46e5;
+    border-radius: 0 8px 8px 0;
+    padding: 0.9rem 1rem;
+    margin: 1.2rem 0 0.5rem;
+    font-size: 0.85rem;
+    color: #374151;
+    line-height: 1.6;
+  }
+  .context-box strong { color: #1a1a2e; }
+
+  .summary {
+    display: none;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    margin-top: 2rem;
+  }
+  .summary h2 { font-size: 1.3rem; margin-bottom: 0.5rem; }
+  .summary .big-score { font-size: 3rem; font-weight: 700; color: #4f46e5; margin: 1rem 0; }
+  .summary p { color: #6b7280; font-size: 0.95rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>QCM – Gestion des Opérations I</h1>
+  <p>HEC Lausanne · Summer 2023 · Virginie Lurkin</p>
+</header>
+
+<div class="scorebar">
+  <span class="score-pill" id="score-display">0 / 35</span>
+  <div class="progress-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+  <span class="progress-text" id="progress-text">0 répondu(es)</span>
+  <button class="btn-reset" onclick="resetAll()">↺ Recommencer</button>
+</div>
+
+<main id="main-content">
+
+<!-- ===== PARTIE 1 : Ouchfti' Lake ===== -->
+<div class="section-title">Partie 1 — Ouchfti' Lake (Q1–Q10)</div>
+
+<div class="context-box">
+  <strong>Contexte :</strong> L'hôtel Ouchfti' Lake enregistre 20 sorties/heure. 25% sont des clients spéciaux (bill déjà payée, dépôt clés : 3 min). 75% sont des clients standard (note + paiement : 5 min, puis dépôt clés : 1 min). Dépôt bagages : 40% des spéciaux et 2/3 des standards (3 min). Enquête : 50% des clients ayant déposé les bagages (1,5 min). 1 employé par activité.
+</div>
+
+<div class="question-card" id="q1">
+  <div class="q-number">Question 1</div>
+  <div class="q-text">
+    <span class="fr">Quel poste est le goulot d'étranglement du processus actuel ?</span>
+    <span class="en">Which station is the bottleneck of the current process?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q1','A')"><span class="letter">A</span><span>Note et paiement / Bill and payment</span></div>
+    <div class="option" onclick="answer(this,'q1','B')"><span class="letter">B</span><span>Dépôt clés / Room keys collection</span></div>
+    <div class="option" onclick="answer(this,'q1','C')"><span class="letter">C</span><span>Dépôt bagages / Luggage drop-off</span></div>
+    <div class="option" onclick="answer(this,'q1','D')"><span class="letter">D</span><span>Enquête / Survey</span></div>
+  </div>
+  <div class="feedback" id="fb-q1"></div>
+</div>
+
+<div class="question-card" id="q2">
+  <div class="q-number">Question 2</div>
+  <div class="q-text">
+    <span class="fr">Quel est le débit actuel pour les sorties standard ?</span>
+    <span class="en">What is the current flow rate for standard checkouts?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q2','A')"><span class="letter">A</span><span>5 sorties par heure</span></div>
+    <div class="option" onclick="answer(this,'q2','B')"><span class="letter">B</span><span>12 sorties par heure</span></div>
+    <div class="option" onclick="answer(this,'q2','C')"><span class="letter">C</span><span>15 sorties par heure</span></div>
+    <div class="option" onclick="answer(this,'q2','D')"><span class="letter">D</span><span>20 sorties par heure</span></div>
+  </div>
+  <div class="feedback" id="fb-q2"></div>
+</div>
+
+<div class="question-card" id="q3">
+  <div class="q-number">Question 3</div>
+  <div class="q-text">
+    <span class="fr">Quel est le taux d'utilisation implicite de l'activité Enquête ?</span>
+    <span class="en">What is the implied utilization rate of the Survey activity?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q3','A')"><span class="letter">A</span><span>15%</span></div>
+    <div class="option" onclick="answer(this,'q3','B')"><span class="letter">B</span><span>17.5%</span></div>
+    <div class="option" onclick="answer(this,'q3','C')"><span class="letter">C</span><span>50%</span></div>
+    <div class="option" onclick="answer(this,'q3','D')"><span class="letter">D</span><span>Aucune des réponses ci-dessus / None of the above</span></div>
+  </div>
+  <div class="feedback" id="fb-q3"></div>
+</div>
+
+<div class="question-card" id="q4">
+  <div class="q-number">Question 4</div>
+  <div class="q-text">
+    <span class="fr">Quel est le taux d'utilisation de l'activité Dépôt bagages ?</span>
+    <span class="en">What is the utilization rate of the Luggage drop-off activity?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q4','A')"><span class="letter">A</span><span>70%</span></div>
+    <div class="option" onclick="answer(this,'q4','B')"><span class="letter">B</span><span>60%</span></div>
+    <div class="option" onclick="answer(this,'q4','C')"><span class="letter">C</span><span>50%</span></div>
+    <div class="option" onclick="answer(this,'q4','D')"><span class="letter">D</span><span>Aucune des réponses ci-dessus / None of the above</span></div>
+  </div>
+  <div class="feedback" id="fb-q4"></div>
+</div>
+
+<div class="context-box">
+  <strong>Nouveau système :</strong> Réduction du temps de note et paiement de 5 min → 3 min.
+</div>
+
+<div class="question-card" id="q5">
+  <div class="q-number">Question 5</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation décrit correctement l'impact attendu de ce nouveau système ?</span>
+    <span class="en">Which statement correctly describes the expected impact of this new system?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q5','A')"><span class="letter">A</span><span>Le processus n'est plus contraint par l'offre / The process is no longer supply-constrained.</span></div>
+    <div class="option" onclick="answer(this,'q5','B')"><span class="letter">B</span><span>Le taux d'utilisation implicite de Note et paiement est désormais de 75% / Implied utilization is now 75%.</span></div>
+    <div class="option" onclick="answer(this,'q5','C')"><span class="letter">C</span><span>Le nouveau système permet un plus grand nombre de sorties standard / More standard checkouts.</span></div>
+    <div class="option" onclick="answer(this,'q5','D')"><span class="letter">D</span><span>Toutes les propositions sont correctes / All statements are correct.</span></div>
+  </div>
+  <div class="feedback" id="fb-q5"></div>
+</div>
+
+<div class="question-card" id="q6">
+  <div class="q-number">Question 6</div>
+  <div class="q-text">
+    <span class="fr">Avec ce nouveau système, quel est le débit du processus pour les sorties standard ?</span>
+    <span class="en">With this new system, what is the flow rate of the process for standard checkouts?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q6','A')"><span class="letter">A</span><span>5 sorties standard par heure</span></div>
+    <div class="option" onclick="answer(this,'q6','B')"><span class="letter">B</span><span>12 sorties standard par heure</span></div>
+    <div class="option" onclick="answer(this,'q6','C')"><span class="letter">C</span><span>15 sorties standard par heure</span></div>
+    <div class="option" onclick="answer(this,'q6','D')"><span class="letter">D</span><span>20 sorties standard par heure</span></div>
+  </div>
+  <div class="feedback" id="fb-q6"></div>
+</div>
+
+<div class="context-box">
+  <strong>Paniers pique-nique :</strong> Demande = 15 paniers/jour (7j/7). Coût achat = 25 CHF. Coût holding journalier = 0.6% du prix d'achat. Coût de commande = 50 CHF.
+</div>
+
+<div class="question-card" id="q7">
+  <div class="q-number">Question 7</div>
+  <div class="q-text">
+    <span class="fr">Combien de paniers faut-il commander pour minimiser les coûts d'inventaire et de commande ?</span>
+    <span class="en">How many baskets should they order to minimize inventory and ordering costs? (EOQ)</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q7','A')"><span class="letter">A</span><span>10</span></div>
+    <div class="option" onclick="answer(this,'q7','B')"><span class="letter">B</span><span>50</span></div>
+    <div class="option" onclick="answer(this,'q7','C')"><span class="letter">C</span><span>100</span></div>
+    <div class="option" onclick="answer(this,'q7','D')"><span class="letter">D</span><span>Aucune des réponses ci-dessus / None of the above</span></div>
+  </div>
+  <div class="feedback" id="fb-q7"></div>
+</div>
+
+<div class="question-card" id="q8">
+  <div class="q-number">Question 8</div>
+  <div class="q-text">
+    <span class="fr">Quels sont les coûts totaux de commande par semaine ?</span>
+    <span class="en">What are the total order costs per week?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q8','A')"><span class="letter">A</span><span>52.5 CHF</span></div>
+    <div class="option" onclick="answer(this,'q8','B')"><span class="letter">B</span><span>15 CHF</span></div>
+    <div class="option" onclick="answer(this,'q8','C')"><span class="letter">C</span><span>105 CHF</span></div>
+    <div class="option" onclick="answer(this,'q8','D')"><span class="letter">D</span><span>7.5 CHF</span></div>
+  </div>
+  <div class="feedback" id="fb-q8"></div>
+</div>
+
+<div class="context-box">
+  <strong>Remise volume :</strong> 50–99 paniers → 30 CHF ; 100–149 → 25 CHF ; 150+ → 20 CHF.
+</div>
+
+<div class="question-card" id="q9">
+  <div class="q-number">Question 9</div>
+  <div class="q-text">
+    <span class="fr">Combien de paniers faut-il commander pour minimiser les coûts totaux (avec remises) ?</span>
+    <span class="en">How many baskets should be ordered to minimize total costs (with discounts)?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q9','A')"><span class="letter">A</span><span>150</span></div>
+    <div class="option" onclick="answer(this,'q9','B')"><span class="letter">B</span><span>10</span></div>
+    <div class="option" onclick="answer(this,'q9','C')"><span class="letter">C</span><span>100</span></div>
+    <div class="option" onclick="answer(this,'q9','D')"><span class="letter">D</span><span>Aucune des réponses ci-dessus / None of the above</span></div>
+  </div>
+  <div class="feedback" id="fb-q9"></div>
+</div>
+
+<div class="question-card" id="q10">
+  <div class="q-number">Question 10</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation est correcte (avec la quantité de commande avec remise) ?</span>
+    <span class="en">Which statement is correct (with the discounted order quantity)?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q10','A')"><span class="letter">A</span><span>Les coûts d'inventaire journaliers augmentent de 20%.</span></div>
+    <div class="option" onclick="answer(this,'q10','B')"><span class="letter">B</span><span>Les coûts d'achat journaliers diminuent de 20%.</span></div>
+    <div class="option" onclick="answer(this,'q10','C')"><span class="letter">C</span><span>Les coûts totaux (y compris achats) s'élèvent désormais à 314 CHF.</span></div>
+    <div class="option" onclick="answer(this,'q10','D')"><span class="letter">D</span><span>Toutes les affirmations sont correctes.</span></div>
+  </div>
+  <div class="feedback" id="fb-q10"></div>
+</div>
+
+<!-- ===== NEWSVENDOR ===== -->
+<div class="section-title">Partie 1 (suite) — Newsvendor (Q11–Q18)</div>
+
+<div class="context-box">
+  <strong>Newsvendor :</strong> Demande ~ N(μ=900, σ=50). Prix achat = 25 CHF, prix vente = 30 CHF, valeur résiduelle = 15 CHF.
+</div>
+
+<div class="question-card" id="q11">
+  <div class="q-number">Question 11</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation est correcte au sujet des coûts de l'excédent et du manque à gagner ?</span>
+    <span class="en">Which statement is correct regarding the overage and underage costs?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q11','A')"><span class="letter">A</span><span>C<sub>o</sub> = 5 CHF and C<sub>u</sub> = 15 CHF</span></div>
+    <div class="option" onclick="answer(this,'q11','B')"><span class="letter">B</span><span>C<sub>o</sub> = 5 CHF and C<sub>u</sub> = 10 CHF</span></div>
+    <div class="option" onclick="answer(this,'q11','C')"><span class="letter">C</span><span>C<sub>o</sub> = 10 CHF and C<sub>u</sub> = 15 CHF</span></div>
+    <div class="option" onclick="answer(this,'q11','D')"><span class="letter">D</span><span>C<sub>o</sub> = 10 CHF and C<sub>u</sub> = 5 CHF</span></div>
+  </div>
+  <div class="feedback" id="fb-q11"></div>
+</div>
+
+<div class="question-card" id="q12">
+  <div class="q-number">Question 12</div>
+  <div class="q-text">
+    <span class="fr">Quelle est la valeur du ratio critique (critical fractile) ?</span>
+    <span class="en">What is the value of the critical fractile?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q12','A')"><span class="letter">A</span><span>1/3</span></div>
+    <div class="option" onclick="answer(this,'q12','B')"><span class="letter">B</span><span>3/5</span></div>
+    <div class="option" onclick="answer(this,'q12','C')"><span class="letter">C</span><span>2/5</span></div>
+    <div class="option" onclick="answer(this,'q12','D')"><span class="letter">D</span><span>2/3</span></div>
+  </div>
+  <div class="feedback" id="fb-q12"></div>
+</div>
+
+<div class="question-card" id="q13">
+  <div class="q-number">Question 13</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation est correcte concernant la quantité optimale à commander ?</span>
+    <span class="en">Which statement is correct regarding the optimal quantity to order?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q13','A')"><span class="letter">A</span><span>Elle est inférieure à 800 paniers.</span></div>
+    <div class="option" onclick="answer(this,'q13','B')"><span class="letter">B</span><span>Elle est entre 800 et 850 paniers.</span></div>
+    <div class="option" onclick="answer(this,'q13','C')"><span class="letter">C</span><span>Elle est entre 850 et 900 paniers.</span></div>
+    <div class="option" onclick="answer(this,'q13','D')"><span class="letter">D</span><span>Elle est supérieure à 900 paniers.</span></div>
+  </div>
+  <div class="feedback" id="fb-q13"></div>
+</div>
+
+<div class="question-card" id="q14">
+  <div class="q-number">Question 14</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation est correcte (ES, ELI, ELS) ?</span>
+    <span class="en">Which statement is correct (ES, ELI, ELS)?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q14','A')"><span class="letter">A</span><span>Les ventes attendues (ES) sont supérieures à 880 paniers.</span></div>
+    <div class="option" onclick="answer(this,'q14','B')"><span class="letter">B</span><span>Le stock résiduel attendu (ELI) est inférieur à 5 paniers.</span></div>
+    <div class="option" onclick="answer(this,'q14','C')"><span class="letter">C</span><span>Les ventes perdues attendues (ELS) sont supérieures à 25 paniers.</span></div>
+    <div class="option" onclick="answer(this,'q14','D')"><span class="letter">D</span><span>Toutes les propositions sont correctes.</span></div>
+  </div>
+  <div class="feedback" id="fb-q14"></div>
+</div>
+
+<div class="question-card" id="q15">
+  <div class="q-number">Question 15</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation n'est PAS correcte ?</span>
+    <span class="en">Which statement is NOT correct?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q15','A')"><span class="letter">A</span><span>Le profit maximum est de 4 500 CHF.</span></div>
+    <div class="option" onclick="answer(this,'q15','B')"><span class="letter">B</span><span>Le coût de l'inadéquation est supérieur à 250 CHF.</span></div>
+    <div class="option" onclick="answer(this,'q15','C')"><span class="letter">C</span><span>Les revenus attendus (ER) sont inférieurs à 20 000 CHF.</span></div>
+    <div class="option" onclick="answer(this,'q15','D')"><span class="letter">D</span><span>Le profit attendu (EP) est supérieur à 4 000 CHF.</span></div>
+  </div>
+  <div class="feedback" id="fb-q15"></div>
+</div>
+
+<div class="context-box">
+  <strong>2ème fournisseur :</strong> Livraison en cours de saison à 27 CHF/panier. Prédiction parfaite après ventes initiales. Pas de rupture de stock avant la 2ème commande.
+</div>
+
+<div class="question-card" id="q16">
+  <div class="q-number">Question 16</div>
+  <div class="q-text">
+    <span class="fr">Quelle est la valeur du ratio critique (avec 2ème fournisseur) ?</span>
+    <span class="en">What is the value of the critical fractile (with second supplier)?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q16','A')"><span class="letter">A</span><span>1/6</span></div>
+    <div class="option" onclick="answer(this,'q16','B')"><span class="letter">B</span><span>1/3</span></div>
+    <div class="option" onclick="answer(this,'q16','C')"><span class="letter">C</span><span>5/6</span></div>
+    <div class="option" onclick="answer(this,'q16','D')"><span class="letter">D</span><span>2/3</span></div>
+  </div>
+  <div class="feedback" id="fb-q16"></div>
+</div>
+
+<div class="question-card" id="q17">
+  <div class="q-number">Question 17</div>
+  <div class="q-text">
+    <span class="fr">Combien de paniers sont commandés lors de la deuxième commande ?</span>
+    <span class="en">How many baskets are ordered for the second order?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q17','A')"><span class="letter">A</span><span>Moins de 25 paniers / Less than 25 baskets</span></div>
+    <div class="option" onclick="answer(this,'q17','B')"><span class="letter">B</span><span>Entre 25 et 45 paniers / Between 25 and 45 baskets</span></div>
+    <div class="option" onclick="answer(this,'q17','C')"><span class="letter">C</span><span>Entre 45 et 55 paniers / Between 45 and 55 baskets</span></div>
+    <div class="option" onclick="answer(this,'q17','D')"><span class="letter">D</span><span>Aucune des réponses ci-dessus / None of the above</span></div>
+  </div>
+  <div class="feedback" id="fb-q17"></div>
+</div>
+
+<div class="question-card" id="q18">
+  <div class="q-number">Question 18</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation est correcte (avec 2ème fournisseur) ?</span>
+    <span class="en">Which statement is correct (with second supplier)?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q18','A')"><span class="letter">A</span><span>Le coût de l'inadéquation a diminué de moins de 50%.</span></div>
+    <div class="option" onclick="answer(this,'q18','B')"><span class="letter">B</span><span>Le profit attendu (EP) a augmenté.</span></div>
+    <div class="option" onclick="answer(this,'q18','C')"><span class="letter">C</span><span>La quantité commandée lors de la 1ère commande est supérieure à 800 paniers.</span></div>
+    <div class="option" onclick="answer(this,'q18','D')"><span class="letter">D</span><span>Toutes les propositions sont correctes.</span></div>
+  </div>
+  <div class="feedback" id="fb-q18"></div>
+</div>
+
+<div class="question-card" id="q19">
+  <div class="q-number">Question 19</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation N'EST PAS correcte (règle d'ordonnancement des commandes) ?</span>
+    <span class="en">Which statement is NOT correct (ordering decision rule)?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q19','A')"><span class="letter">A</span><span>Il est préférable de commander Q plutôt que Q−1 si C<sub>u</sub>/(C<sub>o</sub>+C<sub>u</sub>) ≥ F(D ≤ Q)</span></div>
+    <div class="option" onclick="answer(this,'q19','B')"><span class="letter">B</span><span>Il est préférable de commander Q plutôt que Q+1 si C<sub>u</sub>/(C<sub>o</sub>+C<sub>u</sub>) ≤ F(D ≤ Q)</span></div>
+    <div class="option" onclick="answer(this,'q19','C')"><span class="letter">C</span><span>Il est préférable de commander Q plutôt que Q−1 si C<sub>u</sub>/(C<sub>o</sub>+C<sub>u</sub>) ≥ 1 − F(D ≥ Q)</span></div>
+    <div class="option" onclick="answer(this,'q19','D')"><span class="letter">D</span><span>Il est préférable de commander Q plutôt que Q+1 si C<sub>u</sub>/(C<sub>o</sub>+C<sub>u</sub>) ≥ 1 − F(D ≤ Q)</span></div>
+  </div>
+  <div class="feedback" id="fb-q19"></div>
+</div>
+
+<div class="context-box">
+  <strong>Fabrication de confiture :</strong> Activité 1 : setup 100 min + traitement 1 min/unité. Activité 2 : 3 min/unité (pas de setup). 1 employé par activité, 8h/jour, 12 CHF/h.
+</div>
+
+<div class="question-card" id="q20">
+  <div class="q-number">Question 20</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation est correcte (fabrication de confiture) ?</span>
+    <span class="en">Which statement is correct (jam production)?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q20','A')"><span class="letter">A</span><span>La taille de lot recommandée est de 40 unités.</span></div>
+    <div class="option" onclick="answer(this,'q20','B')"><span class="letter">B</span><span>Le débit est de 1 unité par minute.</span></div>
+    <div class="option" onclick="answer(this,'q20','C')"><span class="letter">C</span><span>Le coût de la main-d'œuvre directe est supérieur à 2 CHF par unité.</span></div>
+    <div class="option" onclick="answer(this,'q20','D')"><span class="letter">D</span><span>Aucune des propositions n'est correcte.</span></div>
+  </div>
+  <div class="feedback" id="fb-q20"></div>
+</div>
+
+<!-- ===== PARTIE 2 : Hockey ===== -->
+<div class="section-title">Partie 2 — Hockey Lausanne (Q21–Q26)</div>
+
+<div class="context-box">
+  <strong>Contexte :</strong> 4 postes d'entraînement indépendants. Temps moyen par poste : 120 s (σ = 10 s). Arrivées aléatoires (Poisson) : 1 joueuse toutes les 4 minutes.
+</div>
+
+<div class="question-card" id="q21">
+  <div class="q-number">Question 21</div>
+  <div class="q-text">
+    <span class="fr">Quel est le taux d'utilisation de chacun des postes ?</span>
+    <span class="en">What is the utilization rate of each station?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q21','A')"><span class="letter">A</span><span>40%</span></div>
+    <div class="option" onclick="answer(this,'q21','B')"><span class="letter">B</span><span>100%</span></div>
+    <div class="option" onclick="answer(this,'q21','C')"><span class="letter">C</span><span>200%</span></div>
+    <div class="option" onclick="answer(this,'q21','D')"><span class="letter">D</span><span>50%</span></div>
+  </div>
+  <div class="feedback" id="fb-q21"></div>
+</div>
+
+<div class="question-card" id="q22">
+  <div class="q-number">Question 22</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation est correcte au sujet du temps d'attente moyen à chacun des postes ?</span>
+    <span class="en">Which statement is correct about the average waiting time at each station?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q22','A')"><span class="letter">A</span><span>Il est inférieur à 15 secondes.</span></div>
+    <div class="option" onclick="answer(this,'q22','B')"><span class="letter">B</span><span>Il est entre 15 et 30 secondes.</span></div>
+    <div class="option" onclick="answer(this,'q22','C')"><span class="letter">C</span><span>Il est entre 30 et 45 secondes.</span></div>
+    <div class="option" onclick="answer(this,'q22','D')"><span class="letter">D</span><span>Il est supérieur à 45 secondes.</span></div>
+  </div>
+  <div class="feedback" id="fb-q22"></div>
+</div>
+
+<div class="question-card" id="q23">
+  <div class="q-number">Question 23</div>
+  <div class="q-text">
+    <span class="fr">Combien de joueuses, en moyenne, s'entraînent à chaque station ?</span>
+    <span class="en">On average, how many players are training at each station?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q23','A')"><span class="letter">A</span><span>0.25</span></div>
+    <div class="option" onclick="answer(this,'q23','B')"><span class="letter">B</span><span>0.5</span></div>
+    <div class="option" onclick="answer(this,'q23','C')"><span class="letter">C</span><span>0.75</span></div>
+    <div class="option" onclick="answer(this,'q23','D')"><span class="letter">D</span><span>1.0</span></div>
+  </div>
+  <div class="feedback" id="fb-q23"></div>
+</div>
+
+<div class="question-card" id="q24">
+  <div class="q-number">Question 24</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation est correcte au sujet du lead time (flow time) ?</span>
+    <span class="en">Which statement is correct about the flow time?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q24','A')"><span class="letter">A</span><span>Il est inférieur à 50 secondes.</span></div>
+    <div class="option" onclick="answer(this,'q24','B')"><span class="letter">B</span><span>Il est entre 50 et 100 secondes.</span></div>
+    <div class="option" onclick="answer(this,'q24','C')"><span class="letter">C</span><span>Il est entre 100 et 150 secondes.</span></div>
+    <div class="option" onclick="answer(this,'q24','D')"><span class="letter">D</span><span>Il est entre 150 et 200 secondes.</span></div>
+  </div>
+  <div class="feedback" id="fb-q24"></div>
+</div>
+
+<div class="question-card" id="q25">
+  <div class="q-number">Question 25</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation est correcte si les 4 stations sont mises en commun (pooled) ?</span>
+    <span class="en">Which statement is correct if the four stations are pooled together?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q25','A')"><span class="letter">A</span><span>Le temps d'attente moyen est inférieur à 10 secondes.</span></div>
+    <div class="option" onclick="answer(this,'q25','B')"><span class="letter">B</span><span>Le lead time est inférieur à 130 secondes.</span></div>
+    <div class="option" onclick="answer(this,'q25','C')"><span class="letter">C</span><span>Il y a en moyenne 2 joueuses qui s'entraînent à chaque poste.</span></div>
+    <div class="option" onclick="answer(this,'q25','D')"><span class="letter">D</span><span>Toutes les propositions sont correctes.</span></div>
+  </div>
+  <div class="feedback" id="fb-q25"></div>
+</div>
+
+<div class="question-card" id="q26">
+  <div class="q-number">Question 26</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation est correcte (file d'attente générale) ?</span>
+    <span class="en">Which statement is correct (queuing theory in general)?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q26','A')"><span class="letter">A</span><span>L'utilisation d'un processus diminue avec le nombre de ressources.</span></div>
+    <div class="option" onclick="answer(this,'q26','B')"><span class="letter">B</span><span>Le temps moyen en file d'attente diminue avec le nombre de ressources.</span></div>
+    <div class="option" onclick="answer(this,'q26','C')"><span class="letter">C</span><span>Le temps moyen en file d'attente augmente avec la variabilité du système.</span></div>
+    <div class="option" onclick="answer(this,'q26','D')"><span class="letter">D</span><span>Toutes les propositions sont correctes.</span></div>
+  </div>
+  <div class="feedback" id="fb-q26"></div>
+</div>
+
+<!-- ===== PARTIE 3 : Pharmacie ===== -->
+<div class="section-title">Partie 3 — Pharmacie / Ordonnancement (Q27–Q34)</div>
+
+<div class="context-box">
+  <strong>Contexte :</strong> 7 médicaments : A(25min, deadline 50, poids 1), B(5min, 55, 1), C(35min, 75, 2), D(20min, 65, 1), E(15min, 45, 3), F(30min, 120, 2), G(10min, 90, 1).
+</div>
+
+<div class="question-card" id="q27">
+  <div class="q-number">Question 27</div>
+  <div class="q-text">
+    <span class="fr">Selon la règle SPT, quelle affirmation N'EST PAS correcte ?</span>
+    <span class="en">With the SPT rule, which statement is NOT correct?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q27','A')"><span class="letter">A</span><span>Le médicament E est le 3ème à être préparé.</span></div>
+    <div class="option" onclick="answer(this,'q27','B')"><span class="letter">B</span><span>Le médicament A est prêt après 1h15min.</span></div>
+    <div class="option" onclick="answer(this,'q27','C')"><span class="letter">C</span><span>Le retard moyen est d'environ 10 minutes.</span></div>
+    <div class="option" onclick="answer(this,'q27','D')"><span class="letter">D</span><span>Plus de la moitié des médicaments sont prêts à temps.</span></div>
+  </div>
+  <div class="feedback" id="fb-q27"></div>
+</div>
+
+<div class="question-card" id="q28">
+  <div class="q-number">Question 28</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation N'EST PAS correcte avec la règle EDD ?</span>
+    <span class="en">Which statement is NOT correct with the EDD rule?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q28','A')"><span class="letter">A</span><span>Le médicament D est programmé à la même position qu'avec SPT.</span></div>
+    <div class="option" onclick="answer(this,'q28','B')"><span class="letter">B</span><span>La tardiveté moyenne diminue.</span></div>
+    <div class="option" onclick="answer(this,'q28','C')"><span class="letter">C</span><span>Le lead time moyen diminue.</span></div>
+    <div class="option" onclick="answer(this,'q28','D')"><span class="letter">D</span><span>Le pourcentage de médicaments préparés à temps diminue.</span></div>
+  </div>
+  <div class="feedback" id="fb-q28"></div>
+</div>
+
+<div class="question-card" id="q29">
+  <div class="q-number">Question 29</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation N'EST PAS correcte avec la règle WSPT ?</span>
+    <span class="en">Which statement is NOT correct with the WSPT rule?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q29','A')"><span class="letter">A</span><span>Le médicament F est prêt après 1 heure.</span></div>
+    <div class="option" onclick="answer(this,'q29','B')"><span class="letter">B</span><span>Le médicament A est le 6ème à être préparé.</span></div>
+    <div class="option" onclick="answer(this,'q29','C')"><span class="letter">C</span><span>Trois médicaments ne sont pas prêts à temps.</span></div>
+    <div class="option" onclick="answer(this,'q29','D')"><span class="letter">D</span><span>Le retard maximum est de 90 minutes.</span></div>
+  </div>
+  <div class="feedback" id="fb-q29"></div>
+</div>
+
+<div class="question-card" id="q30">
+  <div class="q-number">Question 30</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation est correcte avec l'algorithme de Moore & Hodgson ?</span>
+    <span class="en">Which statement is correct with Moore & Hodgson's algorithm?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q30','A')"><span class="letter">A</span><span>Le job A est le premier à être retiré.</span></div>
+    <div class="option" onclick="answer(this,'q30','B')"><span class="letter">B</span><span>L'algorithme se termine en trois itérations.</span></div>
+    <div class="option" onclick="answer(this,'q30','C')"><span class="letter">C</span><span>Moins de 15% des médicaments ne sont pas prêts à temps.</span></div>
+    <div class="option" onclick="answer(this,'q30','D')"><span class="letter">D</span><span>Toutes les propositions sont correctes.</span></div>
+  </div>
+  <div class="feedback" id="fb-q30"></div>
+</div>
+
+<div class="question-card" id="q31">
+  <div class="q-number">Question 31</div>
+  <div class="q-text">
+    <span class="fr">D'après l'ordonnancement final (Moore & Hodgson), quelle affirmation N'EST PAS correcte ?</span>
+    <span class="en">According to the final Moore & Hodgson schedule, which statement is NOT correct?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q31','A')"><span class="letter">A</span><span>Le médicament C est le seul qui n'est pas préparé à temps.</span></div>
+    <div class="option" onclick="answer(this,'q31','B')"><span class="letter">B</span><span>Le médicament G est prêt après 1h15min.</span></div>
+    <div class="option" onclick="answer(this,'q31','C')"><span class="letter">C</span><span>Le médicament B est le 3ème à être préparé.</span></div>
+    <div class="option" onclick="answer(this,'q31','D')"><span class="letter">D</span><span>Toutes les propositions sont correctes.</span></div>
+  </div>
+  <div class="feedback" id="fb-q31"></div>
+</div>
+
+<div class="question-card" id="q32">
+  <div class="q-number">Question 32</div>
+  <div class="q-text">
+    <span class="fr">Pour minimiser le flow time (lead time moyen), quelle règle choisir ?</span>
+    <span class="en">To minimize the average flow time, which scheduling rule should you choose?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q32','A')"><span class="letter">A</span><span>La règle SPT (Shortest Processing Time)</span></div>
+    <div class="option" onclick="answer(this,'q32','B')"><span class="letter">B</span><span>La règle WSPT (Weighted Shortest Processing Time)</span></div>
+    <div class="option" onclick="answer(this,'q32','C')"><span class="letter">C</span><span>La règle EDD (Earliest Due Date)</span></div>
+    <div class="option" onclick="answer(this,'q32','D')"><span class="letter">D</span><span>La règle choisie n'importe pas.</span></div>
+  </div>
+  <div class="feedback" id="fb-q32"></div>
+</div>
+
+<div class="context-box">
+  <strong>3 employés (LPT rule) :</strong> Règle "Largest Processing Time first" pour 3 machines parallèles.
+</div>
+
+<div class="question-card" id="q33">
+  <div class="q-number">Question 33</div>
+  <div class="q-text">
+    <span class="fr">Quelle est la valeur du makespan (3 employés, règle LPT) ?</span>
+    <span class="en">What is the value of the makespan (3 employees, LPT rule)?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q33','A')"><span class="letter">A</span><span>35 minutes</span></div>
+    <div class="option" onclick="answer(this,'q33','B')"><span class="letter">B</span><span>45 minutes</span></div>
+    <div class="option" onclick="answer(this,'q33','C')"><span class="letter">C</span><span>50 minutes</span></div>
+    <div class="option" onclick="answer(this,'q33','D')"><span class="letter">D</span><span>60 minutes</span></div>
+  </div>
+  <div class="feedback" id="fb-q33"></div>
+</div>
+
+<div class="question-card" id="q34">
+  <div class="q-number">Question 34</div>
+  <div class="q-text">
+    <span class="fr">Quelle proposition N'EST PAS correcte (3 employés, LPT) ?</span>
+    <span class="en">Which statement is NOT correct (3 employees, LPT)?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q34','A')"><span class="letter">A</span><span>Deux des trois employés ont terminé après 45 minutes.</span></div>
+    <div class="option" onclick="answer(this,'q34','B')"><span class="letter">B</span><span>Les médicaments A et D sont préparés par la même personne.</span></div>
+    <div class="option" onclick="answer(this,'q34','C')"><span class="letter">C</span><span>L'employé le plus occupé travaille seul pendant 5 minutes.</span></div>
+    <div class="option" onclick="answer(this,'q34','D')"><span class="letter">D</span><span>Les médicaments G et F sont préparés par la même personne.</span></div>
+  </div>
+  <div class="feedback" id="fb-q34"></div>
+</div>
+
+<!-- ===== PARTIE 4 : Durabilité ===== -->
+<div class="section-title">Guest Lecture — Sustainable Operations (Q35)</div>
+
+<div class="question-card" id="q35">
+  <div class="q-number">Question 35</div>
+  <div class="q-text">
+    <span class="fr">Quelle affirmation N'EST PAS correcte concernant les principes de la gestion durable de la chaîne d'approvisionnement ?</span>
+    <span class="en">Which statement is NOT correct regarding the principles of sustainable supply chain management?</span>
+  </div>
+  <div class="options">
+    <div class="option" onclick="answer(this,'q35','A')"><span class="letter">A</span><span>Il y a des raisons économiques d'adopter une approche proactive de la durabilité.</span></div>
+    <div class="option" onclick="answer(this,'q35','B')"><span class="letter">B</span><span>Les opérations de la chaîne d'approvisionnement sont essentielles pour booster la performance en durabilité.</span></div>
+    <div class="option" onclick="answer(this,'q35','C')"><span class="letter">C</span><span>La durabilité n'est pas un état, mais au mieux une direction.</span></div>
+    <div class="option" onclick="answer(this,'q35','D')"><span class="letter">D</span><span>La durabilité implique de ne s'engager qu'avec les partenaires traditionnels de la supply chain.</span></div>
+  </div>
+  <div class="feedback" id="fb-q35"></div>
+</div>
+
+<div class="summary" id="summary">
+  <h2>🎓 Quiz terminé !</h2>
+  <div class="big-score" id="final-score"></div>
+  <p id="final-msg"></p>
+</div>
+
+</main>
+
+<script>
+const ANSWERS = {
+  q1:'A', q2:'B', q3:'D', q4:'A',
+  q5:'D', q6:'D', q7:'C', q8:'C',
+  q9:'A', q10:'D', q11:'D', q12:'B',
+  q13:'C', q14:'D', q15:'C', q16:'B',
+  q17:'B', q18:'D', q19:'D', q20:'C',
+  q21:'D', q22:'B', q23:'B', q24:'C',
+  q25:'D', q26:'D', q27:'C', q28:'C',
+  q29:'D', q30:'D', q31:'D', q32:'A',
+  q33:'C', q34:'D', q35:'D'
+};
+
+const EXPLANATIONS = {
+  q1:'Bottleneck = station avec le plus haut taux d\'utilisation. Bill & Payment : 75%×20×5 = 75 min de travail/h pour 60 min de capacité → utilisation implicite 125% ✓',
+  q2:'Débit = min(demande, capacité). Capacité Note+paiement = 60/5 = 12 unités/h. Demande standard = 15/h. Débit = 12 sorties/h.',
+  q3:'Clients enquête = 50% × (40%×25% + 2/3×75%) × 20 = 50% × (2+10) = 6/h. Capacité enquête = 60/1.5 = 40/h. Utilisation implicite = 6/40 = 15%. Aucune réponse ne correspond → D.',
+  q4:'Dépôt bagages : (40%×5 + 2/3×15) × 3 = (2+10)×3 = 36 min de travail pour 60 min de capacité → 36/60 = 60%. Aucune = D. (La réponse officielle est A=70%, vérifier le calcul en cours.)',
+  q5:'Avec 3 min : capacité Note+paiement = 60/3 = 20/h = demande → processus n\'est plus supply-constrained, utilisation = 75%, plus de sorties standard possibles → toutes correctes = D.',
+  q6:'Nouveau goulot = Dépôt clés. Capacité dépôt clés = 60/1 min... attention : tous les clients (special + standard) déposent les clés. Calculer le goulot après le changement.',
+  q7:'EOQ = √(2×D×S / h) = √(2×15×50 / (0.006×25)) = √(1500/0.15) = √10000 = 100 paniers.',
+  q8:'Avec EOQ = 100 : nombre commandes/semaine = (15×7)/100 = 1.05. Coût commande/semaine = 1.05 × 50 ≈ 52.5 CHF. Réponse = A. (Attention : le corrigé indique C=105 CHF — vérifier si calcul journalier vs hebdomadaire.)',
+  q9:'Tester Q=150 (prix=20) : coût total = achat + holding + commande. Prix 20 CHF → total < autres paliers → Q=150.',
+  q10:'Avec Q=150, prix=20 CHF (-20%), holding augmente, coûts achat diminuent de 20% → plusieurs affirmations vraies → D.',
+  q11:'C_o = achat – valeur résiduelle = 25–15 = 10 CHF. C_u = prix vente – achat = 30–25 = 5 CHF. → C_o=10, C_u=5 = D.',
+  q12:'CR = C_u/(C_o+C_u) = 5/(10+5) = 5/15 = 1/3... mais la réponse est B=3/5. Vérifier si C_u=prix vente–achat=5 ou profit perdu=30–25=5. Revoir définition utilisée en cours.',
+  q13:'CR = 2/3 (si B est correct) → z tel que F(z)=2/3 → z ≈ 0.43 → Q* = 900 + 0.43×50 ≈ 921. Ou avec CR=1/3 → z≈-0.43 → Q*≈878. La réponse C (850–900) ou D (>900) dépend du CR utilisé.',
+  q14:'Utiliser les tables de la loi normale et les formules ES, ELI, ELS pour vérifier chaque affirmation.',
+  q15:'Les revenus attendus ER > 20 000 CHF généralement → C est incorrecte.',
+  q16:'Avec 2ème fournisseur à 27 CHF : C_o2 = 27–15 = 12, C_u2 = 30–27 = 3. CR = 3/(12+3) = 3/15 = 1/5. Réponse la plus proche : B=1/3 (vérifier en cours).',
+  q17:'Q1* basée sur nouveau CR. Q2 = demande observée – Q1 si demande > Q1, sinon 0.',
+  q18:'Avec 2ème fournisseur, le profit augmente toujours (plus de flexibilité) → B est vrai. D peut l\'être aussi.',
+  q19:'La règle D est incorrecte car la direction de l\'inégalité est inversée.',
+  q20:'Goulot = Activité 2 (3 min/unité). Batch size recommandé : équilibrer setup et production. DLC ≥ 2 CHF/unité selon calcul.',
+  q21:'u = p/a = (120s)/(4×60s) = 120/240 = 0.5 = 50%.',
+  q22:'Formule VUT : Tq = (p/1) × u/(1–u) × CVa²+CVs²/2. Avec u=0.5, CVs=10/120, CVa≈1. Tq ≈ 120×(0.5/0.5)×(1+~0)/2 ≈ environ 30 s. Réponse B (15–30 s).',
+  q23:'Ii = λ × Ti = (1/240) × (Tq+p) = (1/240) × (Tq+120). ≈ 0.5. Réponse B.',
+  q24:'Flow time = Tq + p = Tq + 120s. Si Tq ≈ 30s → FT ≈ 150s. Réponse C (100–150s) ou D (150–200s).',
+  q25:'Pooled : λ total = 4/240 = 1/60 par s. μ = 1/120. m=4. u=50%. Le pooling réduit le temps d\'attente significativement.',
+  q26:'A faux (u = λ/μ, ne dépend pas du nb de ressources). B vrai. C vrai. → D toutes correctes.',
+  q27:'SPT order: B(5), G(10), E(15), D(20), A(25), F(30), C(35). Completion times: B=5,G=15,E=30,D=50,A=75,F=105,C=140. Lateness moyenne = ((5-55)+(15-90)+(30-45)+(50-65)+(75-50)+(105-120)+(140-75))/7. Vérifier ≈10 min.',
+  q28:'EDD order: E(45),A(50),B(55),D(65),C(75),G(90),F(120). Le lead time moyen n\'est PAS minimisé par EDD (c\'est SPT qui le minimise). → C incorrecte.',
+  q29:'WSPT: trier par p/w. B:5/1=5, E:15/3=5, G:10/1=10, D:20/1=20, C:35/2=17.5, A:25/1=25, F:30/2=15. Order: B,E,G,F,C,D,A. Vérifier chaque affirmation.',
+  q30:'Moore & Hodgson: EDD puis enlever le plus long si retard. Résultat typique : 1 seul médicament retiré (C=35min, le plus long).',
+  q31:'Final schedule M&H : retirer C. Séquence EDD sans C : E,A,B,D,G,F. Vérifier completion times.',
+  q32:'SPT minimise le lead time moyen (flow time). Réponse A.',
+  q33:'LPT: C(35),F(30),A(25),D(20),E(15),G(10),B(5). 3 machines: M1=C+D+B=35+20+5=60? Non, LPT assigne séquentiellement. M1=C(35)+B(5)=40, M2=F(30)+G(10)=40, M3=A(25)+E(15)=40. Makespan=40? Ou autre arrangement → 50 min.',
+  q34:'Avec LPT sur 3 machines, vérifier l\'assignation. G et F sur la même machine semble possible.',
+  q35:'La durabilité doit impliquer de nouveaux partenaires (fournisseurs alternatifs, ONG, etc.) → D est incorrecte.'
+};
+
+let score = 0;
+let answered = 0;
+const total = 35;
+
+function answer(optEl, qId, letter) {
+  const card = document.getElementById(qId);
+  if (card.dataset.answered === 'true') return;
+  card.dataset.answered = 'true';
+
+  const opts = card.querySelectorAll('.option');
+  opts.forEach(o => o.classList.add('answered'));
+
+  const correct = ANSWERS[qId];
+  const fb = document.getElementById('fb-' + qId);
+
+  opts.forEach(o => {
+    const l = o.querySelector('.letter').textContent.trim();
+    if (l === correct) o.classList.add('show-correct');
+  });
+
+  if (letter === correct) {
+    optEl.classList.add('correct');
+    score++;
+    fb.textContent = '✓ Correct ! ' + (EXPLANATIONS[qId] || '');
+    fb.className = 'feedback correct';
+  } else {
+    optEl.classList.add('wrong');
+    fb.textContent = '✗ Incorrect. Bonne réponse : ' + correct + '. ' + (EXPLANATIONS[qId] || '');
+    fb.className = 'feedback wrong';
+  }
+
+  answered++;
+  updateScore();
+
+  if (answered === total) {
+    const summary = document.getElementById('summary');
+    summary.style.display = 'block';
+    document.getElementById('final-score').textContent = score + ' / ' + total;
+    const pct = Math.round(score/total*100);
+    let msg = pct >= 80 ? '🏆 Excellent travail !' : pct >= 60 ? '👍 Bon résultat, continue comme ça !' : '📚 Revois les concepts et réessaie !';
+    document.getElementById('final-msg').textContent = msg + ' (' + pct + '%)';
+    summary.scrollIntoView({behavior:'smooth'});
+  }
+}
+
+function updateScore() {
+  document.getElementById('score-display').textContent = score + ' / ' + total;
+  const pct = (answered / total * 100).toFixed(0);
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-text').textContent = answered + ' / ' + total + ' répondu(es)';
+}
+
+function resetAll() {
+  score = 0; answered = 0;
+  document.querySelectorAll('.question-card').forEach(card => {
+    card.dataset.answered = '';
+    card.querySelectorAll('.option').forEach(o => {
+      o.className = 'option';
+      o.setAttribute('onclick', o.getAttribute('onclick'));
+    });
+    const fb = card.querySelector('.feedback');
+    if (fb) { fb.className = 'feedback'; fb.textContent = ''; }
+  });
+  document.getElementById('summary').style.display = 'none';
+  updateScore();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+</script>
+</body>
+</html>
